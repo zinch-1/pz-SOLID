@@ -1,71 +1,27 @@
-# Practical lesson pz-SOLID  
-# Практична реалізація SOLID принципів  
+# Практична реалізація SOLID
 
-> У цьому занятті студенти отримують практичні навички застосування SOLID принципів під час рефакторингу існуючого коду.  
-> Мета — створити гнучку, масштабовану та чисту архітектуру шляхом застосування SRP, OCP, LSP, ISP та DIP.
+Рефакторинг коду управління співробітниками для відповідності принципам гнучкої, тестованої та розширюваної архітектури (SOLID).
 
----
+## Аналіз вихідного коду (Анти-патерни)
 
-## What need to do:
-* Провести аналіз вихідного «анти-SOLID» коду  
-* Визначити порушення кожного SOLID принципу  
-* Виконати рефакторинг згідно з:
-  * SRP — Single Responsibility Principle  
-  * OCP — Open/Closed Principle  
-  * LSP — Liskov Substitution Principle  
-  * ISP — Interface Segregation Principle  
-  * DIP — Dependency Inversion Principle  
-* Створити відповідні інтерфейси й абстракції  
-* Усунути зайві або циклічні залежності  
-* Додати мінімальний набір unit-тестів після рефакторингу  
+У файлі `src/original/badEmployeeManager.ts` виявлено 5 порушень:
 
----
+1. **SRP:** Клас `BadEmployeeManager` відповідав за нарахування грошей, роботу з MongoDB та надсилання листів через SendGrid.
+2. **OCP:** Метод `processEmployee` містив жорстко закодований `if-else` для визначення типу контракту. Додавання "погодинного стажера" вимагало б зміни ядра класу.
+3. **LSP:** Клас `Volunteer` успадковував `BadEmployeeManager`, але метод `processEmployee` замість виконання логіки викидав помилку `Error("Volunteers do not get paid")`.
+4. **ISP:** Інтерфейс `IEmployeeOperations` вимагав метод `attendManagementMeeting()`. Звичайні розробники чи волонтери не повинні імплементувати порожні методи зборів керівництва.
+5. **DIP:** Клас безпосередньо створював інстанси `MongoDatabase` та `SendGridEmail`. Відсутність абстракцій робила код неможливим для ізольованого тестування.
 
-## Acceptance criteria
-* Реалізація на мові Typescript 
-* Студент розуміє кожен SOLID принцип та пояснює його застосування  
-* Увесь вихідний код проаналізовано  
-* Усі порушення SOLID знайдено та описано  
-* Після рефакторингу:
-  * Кожен клас має одну відповідальність (SRP)  
-  * Код розширюється через нові класи, а не редагування існуючих (OCP)  
-  * Класи-нащадки повністю заміщають базові (LSP)  
-  * Інтерфейси невеликі й специфічні (ISP)  
-  * Залежності реалізовані через абстракції (DIP)  
-* Код структурований, логічний та зрозумілий  
-* Усі тести проходять успішно  
-* Звіт оформлений у Markdown (README.md)
+## Опис рефакторингу
 
-## Directory Structure
-```
-├── pz-SOLID
-│   ├── src
-│   │   ├── original          # код із навмисними порушеннями SOLID
-│   │   ├── refactored        # код після рефакторингу
-│   │   ├── interfaces        # абстракції та інтерфейси
-│   ├── tests
-│   │   ├── refactored.spec.js
-│   ├── .editorconfig
-│   ├── .gitignore
-│   ├── jest.config.js
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── README.md
-└──
-```
+1. **SRP:** Логіка розділена. `HRProcessor` займається виключно координацією. БД, пошта та калькулятори винесені в окремі модулі (`services.ts`).
+2. **OCP:** Створено абстракцію `ICompensationCalculator`. Тепер зарплатні стратегії (`FullTimeCompensation`, `ContractorCompensation`) можна додавати без зміни `HRProcessor`.
+3. **LSP:** Проблему волонтерів вирішено. Замість помилки використовується `VolunteerCompensation`, який повертає 0. Усі типи співробітників (нащадки `Employee`) коректно обробляються базовим класом.
+4. **ISP:** Інтерфейси розділено на `IWorker` (звичайна робота) та `IManager` (керівництво).
+5. **DIP:** Залежності передаються через конструктор (`IDatabaseService`, `IEmailService`). Ми легко підмінили їх на `jest.fn()` у тестах.
 
-## Useful links
+## Запуск тестів
 
-[SOLID Principles Explained](https://www.baeldung.com/solid-principles)
-
-[SOLID: The First 5 Principles of Object-Oriented Design](https://www.freecodecamp.org/news/solid-principles-explained-in-plain-english/)
-
-[JavaScript SOLID: Реалізація принципів](https://khalilstemmler.com/articles/solid-principles/)
-
-[Clean Code Concepts Adapted for JavaScript](https://github.com/ryanmcdermott/clean-code-javascript)
-
-[Dependency Injection in JavaScript](https://javascript.plainenglish.io/dependency-injection-in-javascript-1b82a8101c1a)
-
-
-
-
+```bash
+npm install
+npx jest
